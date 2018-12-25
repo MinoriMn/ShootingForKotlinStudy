@@ -15,6 +15,8 @@ fun circleCollision(px1 : Float, px2 : Float, py1 : Float, py2 : Float, r1 : Flo
 val MORTON_UNITX = (PLAYABLE_FRAME_WIDTH + 80) / 8
 val MORTON_UNITY = (PLAYABLE_FRAME_HEIGHT + 80) / 8
 
+val pow4 = arrayListOf(1, 4, 16, 64)
+
 fun pointToMorton(posX: Float, posY: Float, halfWidth: Float, halfHeight: Float) : Int{
     val lt_mx : Int = ((posX - halfWidth) / MORTON_UNITX).toInt()
     val lt_my : Int = ((posY - halfHeight) / MORTON_UNITY).toInt()
@@ -37,7 +39,7 @@ fun pointToMorton(posX: Float, posY: Float, halfWidth: Float, halfHeight: Float)
     val L = 3 - attachSpace
     val I = rb_morton shr (2 * attachSpace)
 
-    val r = ((Math.pow(4.0, L.toDouble())).toInt() - 1) / 3/*4-1*/ + I
+    val r = (pow4[L] - 1) / 3/*4-1*/ + I
 
     return r
 }

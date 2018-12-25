@@ -4,28 +4,42 @@ import AppDisplayManager.AppDisplayManager
 import AppDisplayManager.PLAYABLE_FRAME_HEIGHT
 import AppDisplayManager.PLAYABLE_FRAME_WIDTH
 import pointToMorton
+import processing.core.PApplet
 import processing.core.PGraphics
+import processing.core.PImage
 import java.util.*
 
 class PlayerObject(override val objectData: Objects?) : BodyObject{
+    override var posX = PLAYABLE_FRAME_WIDTH / 2f + 40f
+    override var posY = PLAYABLE_FRAME_HEIGHT - 30f + 40f //プレイヤー座標 初期位置
 
-    override val objectType: ObjectType = ObjectType.ENEMY_BULLET
+    private val halfSize = 0f
 
-    var playerPosX = PLAYABLE_FRAME_WIDTH / 2f + 40f
-    var playerPosY = PLAYABLE_FRAME_HEIGHT - 30f + 40f //プレイヤー座標 初期位置
-    private val playerHalfSize = 0f
-    var playerMorton = pointToMorton(playerPosX, playerPosY, playerHalfSize, playerHalfSize)
+    override val objectType: ObjectType = ObjectType.PLAYER
+    override var morton: Int = pointToMorton(posX, posY, halfSize, halfSize)
+    override var deleteFlag: Boolean = false
+
     private val playerSpeed = 3f
     private val spAdjust45deg = 0.7071f //45度系移動スピード調整
     private val spAdjustShift = 0.4f //スニーク調整
 
     //境界線
-    private val ltBorder = playerHalfSize + 40f
-    private val rBorder = PLAYABLE_FRAME_WIDTH - playerHalfSize + 40f
-    private val bBorder = PLAYABLE_FRAME_HEIGHT - playerHalfSize + 40f
+    private val ltBorder = halfSize + 40f
+    private val rBorder = PLAYABLE_FRAME_WIDTH - halfSize + 40f
+    private val bBorder = PLAYABLE_FRAME_HEIGHT - halfSize + 40f
 
-    override fun updateData() {
+    lateinit var playerImg : PImage
 
+    init {
+
+    }
+
+    fun start(app : PApplet){
+        playerImg = app.loadImage("res/image/test_player.png")
+    }
+
+    override fun updateData() : GameObject {
+        return this
     }
     
     override fun updatePos(){
@@ -48,29 +62,31 @@ class PlayerObject(override val objectData: Objects?) : BodyObject{
             posDy *= spAdjustShift
         }
 
-        playerPosX += posDx
-        playerPosY += posDy
+        posX += posDx
+        posY += posDy
 
-        if(playerPosX < ltBorder){
-            playerPosX = ltBorder
-        }else if (playerPosX >= rBorder){
-            playerPosX = rBorder
+        if(posX < ltBorder){
+            posX = ltBorder
+        }else if (posX >= rBorder){
+            posX = rBorder
         }
 
-        if(playerPosY < ltBorder){
-            playerPosY = ltBorder
-        }else if (playerPosY >= bBorder){
-            playerPosY = bBorder
+        if(posY < ltBorder){
+            posY = ltBorder
+        }else if (posY >= bBorder){
+            posY = bBorder
         }
 
-        playerMorton = pointToMorton(playerPosX, playerPosY, playerHalfSize, playerHalfSize)
+        morton = pointToMorton(posX, posY, halfSize, halfSize)
 
         /*debug*/
-        //println(playerMorton)
+        //println(morton)
     }
 
     override fun draw(frame: PGraphics) {
-        frame.ellipse(playerPosX, playerPosY,(playerHalfSize + 1) * 2, (playerHalfSize + 1) * 2)
+        frame.fill(0f, 255f, 255f)
+        frame.image(playerImg, posX, posY, (halfSize + 1) * 10, (halfSize + 1) * 10)
+        frame.ellipse(posX, posY,(halfSize + 1) * 2, (halfSize + 1) * 2)
     }
 
     override fun checkRemoval() {

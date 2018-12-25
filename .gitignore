@@ -2,5 +2,6 @@
 /tmp/
 /bin/
 /out/
+/aparapi/
 *.test
 *.swp
