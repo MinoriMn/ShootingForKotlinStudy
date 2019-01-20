@@ -1,12 +1,11 @@
 package GameObject
 
-import AppDisplayManager.PLAYABLE_FRAME_HEIGHT
-import AppDisplayManager.PLAYABLE_FRAME_WIDTH
-import circleCollision
+import AppDisplayManager.FRAME_HEIGHT
+import AppDisplayManager.FRAME_WIDTH
 import pointToMorton
 import processing.core.PApplet
 import processing.core.PApplet.radians
-import processing.core.PConstants.P3D
+import processing.core.PConstants
 import processing.core.PGraphics
 import processing.core.PImage
 import processing.opengl.PGraphicsOpenGL
@@ -15,7 +14,7 @@ import java.util.*
 import kotlin.math.cos
 import kotlin.math.sin
 
-data class RoundBullets(override val objectData: Objects?, private val gameObjectManager: GameObjectManager): BulletObjectManager{
+data class RoundBullets(private val gameObjectManager: GameObjectManager): BulletObjectManager{
     override val objectType: ObjectType = ObjectType.ENEMY_BULLET
 
     val bullets : MutableList<RoundBulletData> = Collections.synchronizedList(mutableListOf())
@@ -23,7 +22,8 @@ data class RoundBullets(override val objectData: Objects?, private val gameObjec
     lateinit var bulletTex : PGraphics
     lateinit var bulletPgo : PGraphicsOpenGL
     lateinit var pointShader: PShader
-    lateinit var bulletTexImg : PImage
+    lateinit var bulletTexImgs : Array<PImage>
+
     var a_round = 0
 
     /*debug*/
@@ -31,37 +31,26 @@ data class RoundBullets(override val objectData: Objects?, private val gameObjec
     var degree = 0
 
     override fun start(app: PApplet) {
-        bulletTex = app.createGraphics(30, 30, P3D)
+        bulletTex = app.createGraphics(30, 30, PConstants.P2D)
         pointShader = app.loadShader("src/AppDisplayManager/Shader/RoundBullets.frag")
         pointShader.set("center", 15f, 15f)
         pointShader.set("a", 1f)
         pointShader.set("r", 15f)
+
+        bulletTexImgs = Array(90){i -> makeBulletTex(i * 4)}
 
         bulletPgo = bulletTex as PGraphicsOpenGL
         with(bulletTex){
             beginDraw()
             shader(pointShader)
             noStroke()
-            fill(random.nextInt(255).toFloat(), random.nextInt(255).toFloat(), 255f, 255f)
-
             rect(0f, 0f, 30f, 30f)
             endDraw()
         }
-
-        bulletTexImg = bulletTex.get()
     }
 
     //objectdataから情報管理を行う
-    override fun updateData() : GameObject{
-        /*debug 1300 obj -> dFPS=60F, when 1600 obj -> dFPS=54F */
-        degree = ++degree % 360
-        add(PLAYABLE_FRAME_WIDTH / 2f + 40f, PLAYABLE_FRAME_HEIGHT / 2f + 40f, degree.toFloat(), 5f + random.nextFloat() * 3, 1f)
-        degree = ++degree % 360
-        add(PLAYABLE_FRAME_WIDTH / 2f + 40f, PLAYABLE_FRAME_HEIGHT / 2f + 40f, degree.toFloat(), 5f + random.nextFloat() * 3, 1f)
-        degree = ++degree % 360
-        add(PLAYABLE_FRAME_WIDTH / 2f + 40f, PLAYABLE_FRAME_HEIGHT / 2f + 40f, degree.toFloat(), 5f + random.nextFloat() * 3, 1f)
-        degree = ++degree % 360
-        add(PLAYABLE_FRAME_WIDTH / 2f + 40f, PLAYABLE_FRAME_HEIGHT / 2f + 40f, degree.toFloat(), 5f + random.nextFloat() * 3, 1f)
+    override fun updateData() : GameObjectBase{
 
         bulletObjSize += bullets.size
 
@@ -69,42 +58,53 @@ data class RoundBullets(override val objectData: Objects?, private val gameObjec
     }
 
 
-    fun add(posX : Float, posY : Float, degree: Float, halfSize : Float, speed: Float){
+    fun add(posX : Float, posY : Float, degree: Int, halfSize : Float, speed: Float){
         val morton = pointToMorton(posX, posY, halfSize, halfSize)
-        val newBullet = RoundBulletData(posX, posY, cos(degree)*speed, sin(degree)*speed, morton, morton, halfSize)
+        val newBullet = RoundBulletData(posX, posY, cos(degree.toFloat())*speed, sin(degree.toFloat())*speed, morton, morton, halfSize)
         bullets.add(newBullet)
         GameObjectManager.enemyBulletsMorton[morton].add(newBullet)
     }
 
 
-    var i = 0
+    var imk = 0
+    var ii = 0
 
     override fun draw(frame: PGraphics) {
 
-        i = 0
-
+        var i = ii++
         synchronized(bullets) {
             val bulletObjIterator = bullets.listIterator()
-            bulletObjIterator.forEachRemaining {
-                frame.tint(frame.color(i++ % 255, 100, 255))
-                frame.image(bulletTexImg, it.posX, it.posY, it.halfSize * 2, it.halfSize * 2)
+//            bulletObjIterator.forEachRemaining {
+//                frame.tint(frame.color(i++ % 360, 40, 100))
+//                frame.image(bulletTexImg, it.posX, it.posY, it.halfSize * 2 + 4, it.halfSize * 2 + 4)
+//            }
+
+            imk = (imk + 1) % 90
+            frame.beginShape(PConstants.QUADS)
+            frame.texture(bulletTexImgs[imk])
+            while (bulletObjIterator.hasNext()) {
+                val bulletData = bulletObjIterator.next()
+                frame.tint(frame.color(i++ % 360, 40, 100))
+                val size = bulletData.halfSize + 2
+                frame.vertex(bulletData.posX - size, bulletData.posY - size, 0f, 0f)
+                frame.vertex(bulletData.posX + size, bulletData.posY - size, 30f, 0f)
+                frame.vertex(bulletData.posX + size, bulletData.posY + size, 30f, 30f)
+                frame.vertex(bulletData.posX - size, bulletData.posY + size, 0f, 30f)
             }
+            frame.endShape()
         }
-        frame.endDraw()
 
-        updateBulletTex()
-        bulletTexImg = bulletTex.get()
-
-        frame.beginDraw()
-
+//        frame.endDraw()
+//
+//        updateBulletTex()
+//
+//        frame.beginDraw()
     }
 
     fun updateBulletTex(){
-        a_round = (a_round + 1) % 90
-
-        if(a_round % 4 == 0) {
-//            pointShader.set("a", random.nextFloat() * 2 + 3)
-            pointShader.set("a", sin(radians(a_round.toFloat() * 4)) * 2 + 3)
+        a_round = (a_round + 1) % 360
+        
+            pointShader.set("a", cos(radians(a_round.toFloat())) * 2 + 3)
 
             with(bulletTex) {
                 beginDraw()
@@ -113,9 +113,24 @@ data class RoundBullets(override val objectData: Objects?, private val gameObjec
                 rect(0f, 0f, 30f, 30f)
                 endDraw()
             }
-        }
+
     }
 
+    fun makeBulletTex(a : Int) : PImage{
+            //print(" DD")
+            pointShader.set("a", cos(radians(a.toFloat())) * 2 + 3)
+
+            with(bulletTex) {
+                beginDraw()
+                shader(pointShader)
+                background(0, 0f)
+                rect(0f, 0f, 30f, 30f)
+                endDraw()
+            }
+
+        return bulletTex.copy()
+
+    }
 
     override fun updatePos() {
         bullets.forEach {
@@ -141,20 +156,14 @@ data class RoundBullets(override val objectData: Objects?, private val gameObjec
                 }
             }
         }
-
-
     }
 
     fun checkOnExistableArea(posX: Float, posY: Float) : Boolean{
-        return posX < 10 || posX > PLAYABLE_FRAME_WIDTH + 70 || posY < 10 || posY > PLAYABLE_FRAME_HEIGHT + 70
+        return posX < 10 || posX > FRAME_WIDTH + 70 || posY < 10 || posY > FRAME_HEIGHT + 70
     }
 }
 
-data class RoundBulletData(override var posX : Float, override var posY : Float, var dx : Float, var dy : Float, override var newMorton : Int, override var oldMorton : Int, val halfSize : Float) : BulletObject {
-    override fun collisionDetection(playerObject: BodyObject) {
-        val hit = circleCollision(playerObject.posX, posX, playerObject.posY, posY, 0f, halfSize)
-        deleteFlag = hit
-    }
-
+data class RoundBulletData(override var posX : Float, override var posY : Float, var dx : Float, var dy : Float, override var newMorton : Int, override var oldMorton : Int, override val halfSize : Float) : BulletObject {
+    override val collisionType = CollisionType.Cycle
     override var deleteFlag: Boolean = false
 }

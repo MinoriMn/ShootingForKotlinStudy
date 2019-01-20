@@ -1,32 +1,32 @@
 package GameObject
 
 import AppDisplayManager.AppDisplayManager
-import AppDisplayManager.PLAYABLE_FRAME_HEIGHT
-import AppDisplayManager.PLAYABLE_FRAME_WIDTH
+import AppDisplayManager.FRAME_PADDING
+import AppDisplayManager.GAME_SPACE_HEIGHT
+import AppDisplayManager.GAME_SPACE_WIDTH
 import pointToMorton
 import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PImage
-import java.util.*
 
-class PlayerObjectBase(override val objectData: Objects?) : BodyObjectBase{
-    override var posX = PLAYABLE_FRAME_WIDTH / 2f + 40f
-    override var posY = PLAYABLE_FRAME_HEIGHT - 30f + 40f //プレイヤー座標 初期位置
+class PlayerObject() : BodyObject{
+    override var posX = GAME_SPACE_WIDTH / 2f
+    override var posY = GAME_SPACE_HEIGHT - 30f - FRAME_PADDING / 2f //プレイヤー座標 初期位置
 
-    private val halfSize = 0f
+    override val halfSize = 0f
 
     override val objectType: ObjectType = ObjectType.PLAYER
+    override val collisionType: CollisionType = CollisionType.Cycle
     override var morton: Int = pointToMorton(posX, posY, halfSize, halfSize)
-    override var deleteFlag: Boolean = false
 
     private val playerSpeed = 3f
     private val spAdjust45deg = 0.7071f //45度系移動スピード調整
     private val spAdjustShift = 0.4f //スニーク調整
 
     //境界線
-    private val ltBorder = halfSize + 40f
-    private val rBorder = PLAYABLE_FRAME_WIDTH - halfSize + 40f
-    private val bBorder = PLAYABLE_FRAME_HEIGHT - halfSize + 40f
+    private val ltBorder = halfSize + FRAME_PADDING / 2f
+    private val rBorder = GAME_SPACE_WIDTH - halfSize - FRAME_PADDING / 2f
+    private val bBorder = GAME_SPACE_HEIGHT - halfSize - FRAME_PADDING / 2f
 
     val playerImg = kotlin.arrayOfNulls<PImage>(10)
 
@@ -93,7 +93,8 @@ class PlayerObjectBase(override val objectData: Objects?) : BodyObjectBase{
         frame.image(playerImg[8], posX, posY, 6f, 6f)
     }
 
-    override fun checkRemoval() {
-
+    override fun hitBullet() {
+        println("hit")
     }
+
 }

@@ -1,9 +1,12 @@
 package AppDisplayManager
 
+import AudioFilePlayer
 import GameObject.bodyObjSize
 import GameObject.bulletObjSize
 import GameObject.calFps
+import SE
 import processing.core.PApplet
+import processing.core.PConstants
 
 
 //メインウィンドウ
@@ -11,40 +14,44 @@ const val WINDOW_WIDTH = 920
 const val WINDOW_HEIGHT = 600
 
 //PlayableFrame
-const val PLAYABLE_FRAME_WIDTH = 480
-const val PLAYABLE_FRAME_HEIGHT = 560
-const val PLAYABLE_START_POSX = 20
-const val PLAYABLE_START_POSY = 20
+const val FRAME_WIDTH = 480
+const val FRAME_HEIGHT = 560
+const val FRAME_PADDING = 80
 
-const val LAYOUT_INDEX_LOCATION = 0
+const val GAME_SPACE_WIDTH = FRAME_WIDTH + FRAME_PADDING
+const val GAME_SPACE_HEIGHT = FRAME_HEIGHT + FRAME_PADDING
+
+const val PLAYABLE_START_POSX = 20f
+const val PLAYABLE_START_POSY = 20f
 
 class AppDisplayManager : PApplet (){
-    companion object {
-        var inputCrossKey = 0b00000 //dir: shift, d, r, u, l
-    }
-
     lateinit var frames : Array<GraphicFrame>
+    val player = AudioFilePlayer()
 
     fun run(args: Array<String>) : Unit = PApplet.main(AppDisplayManager::class.qualifiedName) //processing起動
 
-    override fun settings() : Unit{
+    override fun settings(){
         //TIS = Text Input Sources, TSM = Text Services Manager
-        size(WINDOW_WIDTH, WINDOW_HEIGHT, P3D)
+        size(WINDOW_WIDTH, WINDOW_HEIGHT, PConstants.P2D)
+        //fullScreen(PConstants.P2D)
 
         frames = arrayOf(PlayableFrame())
-
     }
 
-    override fun setup() : Unit{
+    override fun setup(){
         fill(0xff)
         frameRate(60f)
+
+        hint(PConstants.DISABLE_DEPTH_TEST)
+        hint(PConstants.DISABLE_OPENGL_ERRORS)
 
         frames.forEach { it.start(this) }
     }
 
 
-    override fun draw() : Unit{
+    override fun draw(){
         background(255f)
+
 
         frames.forEach { it.draw(this) }
 
@@ -55,7 +62,6 @@ class AppDisplayManager : PApplet (){
         for (i in 0 until s.size){
             text(s[i], WINDOW_WIDTH -150f, WINDOW_HEIGHT - 10f * (i + 1))
         }
-
     }
 
     override fun keyPressed() {
@@ -67,7 +73,14 @@ class AppDisplayManager : PApplet (){
             }
 
             16 ->{
-                inputCrossKey = inputCrossKey or 0b10000
+                inputCrossKey = inputCrossKey or 0b010000
+            }
+
+            90 ->{
+                player.playSE(SE.NormalShot)
+                //zzzplayer.loopPlaySE(SE.NormalShot, Clip.LOOP_CONTINUOUSLY)
+
+                inputCrossKey = inputCrossKey or 0b100000
             }
         }
     }
@@ -81,8 +94,16 @@ class AppDisplayManager : PApplet (){
             }
 
             16 ->{
-                inputCrossKey = inputCrossKey and 0b01111
+                inputCrossKey = inputCrossKey and 0b101111
+            }
+
+            90 ->{
+                inputCrossKey = inputCrossKey and 0b011111
             }
         }
+    }
+
+    companion object {
+        var inputCrossKey = 0b000000 //dir: z, shift, d, r, u, l
     }
 }

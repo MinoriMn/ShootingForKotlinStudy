@@ -4,25 +4,34 @@ import processing.core.PApplet
 import processing.core.PGraphics
 import java.util.*
 
-interface GameObject{
+interface GameObjectBase{
     val objectType: ObjectType
-    val objectData: Objects?
 
-    fun updateData() : GameObject
+    fun updateData() : GameObjectBase
     fun updatePos()
-    fun checkRemoval()
     fun draw(frame: PGraphics)
 }
 
-interface BodyObject : GameObject{
+interface BodyObject : GameObjectBase{
     var posX : Float
     var posY : Float
     var morton: Int
-    var deleteFlag : Boolean
+    val halfSize : Float
+    val collisionType : CollisionType
+    fun hitBullet()
 }
 
-interface BulletObjectManager : GameObject{
+interface EnemyBody : BodyObject{
+    var deleteFlag : Boolean
+    val objectData: Objects?
+    val gameObjectManager : GameObjectManager
+
+    fun shouldDestroyed() : Boolean
+}
+
+interface BulletObjectManager : GameObjectBase{
     fun start(app : PApplet)
+    fun checkRemoval()
 }
 
 interface BulletObject{
@@ -30,9 +39,9 @@ interface BulletObject{
     var posY : Float
     var newMorton : Int
     var oldMorton : Int
+    val halfSize : Float
     var deleteFlag : Boolean
-
-    fun collisionDetection(bodyObject: BodyObject)
+    val collisionType : CollisionType
 }
 
 enum class ObjectType{
@@ -41,4 +50,9 @@ enum class ObjectType{
     ENEMY,
     BOSS_ENEMY,
     ENEMY_BULLET
+}
+
+enum class CollisionType{
+    Cycle,
+    Rectangle
 }
