@@ -1,4 +1,4 @@
 import AppDisplayManager.AppDisplayManager
-import javafx.application.Application
+//import AppDisplayManager.ShaderTest2
 
 fun main(args: Array<String>) : Unit = AppDisplayManager().run(args)

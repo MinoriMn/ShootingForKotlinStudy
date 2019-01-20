@@ -1,31 +1,48 @@
 package GameObject
 
 import AppDisplayManager.AppDisplayManager
-import AppDisplayManager.PLAYABLE_FRAME_HEIGHT
-import AppDisplayManager.PLAYABLE_FRAME_WIDTH
+import AppDisplayManager.FRAME_PADDING
+import AppDisplayManager.GAME_SPACE_HEIGHT
+import AppDisplayManager.GAME_SPACE_WIDTH
 import pointToMorton
+import processing.core.PApplet
 import processing.core.PGraphics
-import java.util.*
+import processing.core.PImage
 
-class PlayerObject(override val objectData: Objects?) : BodyObject{
+class PlayerObject() : BodyObject{
+    override var posX = GAME_SPACE_WIDTH / 2f
+    override var posY = GAME_SPACE_HEIGHT - 30f - FRAME_PADDING / 2f //プレイヤー座標 初期位置
 
-    override val objectType: ObjectType = ObjectType.ENEMY_BULLET
+    override val halfSize = 0f
 
-    var playerPosX = PLAYABLE_FRAME_WIDTH / 2f + 40f
-    var playerPosY = PLAYABLE_FRAME_HEIGHT - 30f + 40f //プレイヤー座標 初期位置
-    private val playerHalfSize = 0f
-    var playerMorton = pointToMorton(playerPosX, playerPosY, playerHalfSize, playerHalfSize)
+    override val objectType: ObjectType = ObjectType.PLAYER
+    override val collisionType: CollisionType = CollisionType.Cycle
+    override var morton: Int = pointToMorton(posX, posY, halfSize, halfSize)
+
     private val playerSpeed = 3f
     private val spAdjust45deg = 0.7071f //45度系移動スピード調整
     private val spAdjustShift = 0.4f //スニーク調整
 
     //境界線
-    private val ltBorder = playerHalfSize + 40f
-    private val rBorder = PLAYABLE_FRAME_WIDTH - playerHalfSize + 40f
-    private val bBorder = PLAYABLE_FRAME_HEIGHT - playerHalfSize + 40f
+    private val ltBorder = halfSize + FRAME_PADDING / 2f
+    private val rBorder = GAME_SPACE_WIDTH - halfSize - FRAME_PADDING / 2f
+    private val bBorder = GAME_SPACE_HEIGHT - halfSize - FRAME_PADDING / 2f
 
-    override fun updateData() {
+    val playerImg = kotlin.arrayOfNulls<PImage>(10)
 
+
+    init {
+
+    }
+
+    fun start(app : PApplet){
+        val playerImgSprite = app.loadImage("res/image/player_reimu.png")
+        playerImg[0] = playerImgSprite.get(0, 0, 48, 48)
+        playerImg[8] = playerImgSprite.get(69, 167, 6, 6)
+    }
+
+    override fun updateData() : GameObjectBase {
+        return this
     }
     
     override fun updatePos(){
@@ -48,32 +65,36 @@ class PlayerObject(override val objectData: Objects?) : BodyObject{
             posDy *= spAdjustShift
         }
 
-        playerPosX += posDx
-        playerPosY += posDy
+        posX += posDx
+        posY += posDy
 
-        if(playerPosX < ltBorder){
-            playerPosX = ltBorder
-        }else if (playerPosX >= rBorder){
-            playerPosX = rBorder
+        if(posX < ltBorder){
+            posX = ltBorder
+        }else if (posX >= rBorder){
+            posX = rBorder
         }
 
-        if(playerPosY < ltBorder){
-            playerPosY = ltBorder
-        }else if (playerPosY >= bBorder){
-            playerPosY = bBorder
+        if(posY < ltBorder){
+            posY = ltBorder
+        }else if (posY >= bBorder){
+            posY = bBorder
         }
 
-        playerMorton = pointToMorton(playerPosX, playerPosY, playerHalfSize, playerHalfSize)
+        morton = pointToMorton(posX, posY, halfSize, halfSize)
 
         /*debug*/
-        //println(playerMorton)
+        //println(morton)
     }
 
     override fun draw(frame: PGraphics) {
-        frame.ellipse(playerPosX, playerPosY,(playerHalfSize + 1) * 2, (playerHalfSize + 1) * 2)
+        frame.fill(0f, 255f, 255f)
+        frame.noTint()
+        frame.image(playerImg[0], posX, posY, 30f, 30f)
+        frame.image(playerImg[8], posX, posY, 6f, 6f)
     }
 
-    override fun checkRemoval() {
-
+    override fun hitBullet() {
+        println("hit")
     }
+
 }

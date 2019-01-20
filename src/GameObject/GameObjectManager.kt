@@ -1,5 +1,10 @@
 package GameObject
 
+import AppDisplayManager.GAME_SPACE_HEIGHT
+import AppDisplayManager.GAME_SPACE_WIDTH
+import collisionFunctionDetection
+import processing.core.PApplet
+import processing.core.PConstants
 import processing.core.PGraphics
 import kotlin.concurrent.thread
 
@@ -8,44 +13,42 @@ var bulletObjSize = 0
 var bodyObjSize = 0
 
 class GameObjectManager(playerObject: PlayerObject) {
-    val bodyObjects : MutableList<GameObject> =  mutableListOf() //機体ごとのオブジェクトをもつ
-    val bulletsObjects : MutableList<GameObject> =  mutableListOf() //一つのオブジェクトに出現数情報を格納する
+    val enemyBodyObjects : MutableList<EnemyBody> =  mutableListOf() //機体ごとのオブジェクトをもつ
+    val bulletObjectManager : MutableList<BulletObjectManager> =  mutableListOf() //一つのオブジェクトに出現数情報を格納する
+    val playerObject = playerObject
 
-    //val enemyBulletsMorton : TreeNode<List<GameObject>>( mutableListOf())
+    val roundBullets = RoundBullets( this)
 
     //=========================更新スレッド==============================
     init {
-        bodyObjects.add(playerObject)
-        bulletsObjects.add(RoundBullets(null, this))
+        enemyBodyObjects.add(TestEnemyObject(GAME_SPACE_WIDTH / 2f,GAME_SPACE_HEIGHT / 4f, 90f, null, this))
+        enemyBodyObjects.add(TestEnemyObject(GAME_SPACE_WIDTH / 2f,GAME_SPACE_HEIGHT / 2f, 0f, null, this))
+        enemyBodyObjects.add(TestEnemyObject(GAME_SPACE_WIDTH / 2f,GAME_SPACE_HEIGHT / 3f, 180f, null, this))
+        bulletObjectManager.add(roundBullets)
+        bulletObjectManager.add(PlayerBullets(playerObject))
+    }
+
+    fun start(app : PApplet){
+        playerObject.start(app)
+        bulletObjectManager.forEach { it.start(app) }
         threadCalTreat()
-
-
     }
 
     fun updatePos(){
-//        synchronized(bulletsObjects) {
-//            val bulletObjIterator = bulletsObjects.listIterator()
-//            bulletObjIterator.forEachRemaining {
-//                it.updateData()
-//                it.updatePos()
-//            }
-//        }
 
-        bodyObjects.forEach {
-            it.updateData()
-            it.updatePos()
-        }
-        bodyObjSize = bodyObjects.size
+        playerObject.updateData().updatePos()
+        enemyBodyObjects.forEach { it.updateData().updatePos() }
+        bodyObjSize = enemyBodyObjects.size
 
         bulletObjSize = 0
-        bulletsObjects.forEach {
-            it.updateData()
-            it.updatePos()
-        }
+        bulletObjectManager.forEach { it.updateData().updatePos() }
 
         checkRemoval()
 
+        collisionDetection()
+
         /*debug*/
+        //println("s67=${enemyBulletsMorton[67].size} s68=${enemyBulletsMorton[68].size}")
     }
 
 
@@ -76,14 +79,72 @@ class GameObjectManager(playerObject: PlayerObject) {
     }
 
     private fun checkRemoval(){
-        synchronized(bodyObjects) {
-            val bodyObjIterator = bodyObjects.listIterator()
-            bodyObjIterator.forEachRemaining { it.checkRemoval() }
+        synchronized(enemyBodyObjects) {
+            val bodyObjIterator = enemyBodyObjects.listIterator()
+            while (bodyObjIterator.hasNext()) {
+                val body = bodyObjIterator.next()
+                if (body.shouldDestroyed()) {
+                    bodyObjIterator.remove()
+                }
+            }
         }
 
-        bulletsObjects.forEach {
+        bulletObjectManager.forEach {
             it.checkRemoval()
         }
+    }
+
+    //body基準でmorton探索を行う
+    private fun collisionDetection(){
+        //print("pu:")
+        upperSearch(playerObject, playerObject.morton, enemyBulletsMorton)
+        //println()
+
+        enemyBodyObjects.forEach {
+            /*debug*/
+            //print("eu:")
+            upperSearch(it, it.morton, playerBulletsMorton)
+            //println()
+            val m4 = it.morton * 4
+            //print("l:")
+            for (lsm in m4+1..m4+4){lowerSearch(it, lsm, playerBulletsMorton)}
+            //println()
+        }
+
+    }
+
+    //現在の位と上位探索
+    private fun upperSearch(bodyObject: BodyObject, searchMorton : Int, bulletsMorton: Array<MutableList<BulletObject>> ){
+        val bulletsList = bulletsMorton[searchMorton]
+
+        /*debug*/
+        //print("$searchMorton,")
+
+        bulletsList.forEach {
+            collisionFunctionDetection(bodyObject, it)
+        }
+
+        //next
+        if(searchMorton != 0) upperSearch(bodyObject, (searchMorton - 1) / 4,  bulletsMorton)
+    }
+
+    //下位探索
+    private fun lowerSearch(bodyObject: BodyObject, searchMorton : Int, bulletsMorton: Array<MutableList<BulletObject>> ){
+        if(searchMorton > 84) return
+
+        /*debug*/
+       // print("$searchMorton,")
+
+        val bulletsList = bulletsMorton[searchMorton]
+
+        bulletsList.forEach {
+            collisionFunctionDetection(bodyObject, it)
+        }
+
+        //next
+        val sm4 = searchMorton * 4
+        for (nsm in sm4+1..sm4+4) lowerSearch(bodyObject, nsm, bulletsMorton)
+
     }
 
     private var upBasetime: Long = 0   //測定基準時間
@@ -102,63 +163,25 @@ class GameObjectManager(playerObject: PlayerObject) {
 
     //=========================描画(メイン)スレッド==============================
     fun draw(frame: PGraphics){
-//        synchronized(bulletsObjects) {
-//            val bulletObjIterator = bulletsObjects.listIterator()
-//            bulletObjIterator.forEachRemaining { it.draw(frame) }
-//        }
 
-        frame.fill(255F, 0F, 0F)
-        synchronized(bodyObjects) {
-            val bodyObjIterator = bodyObjects.listIterator()
-            bodyObjIterator.forEachRemaining { it.draw(frame) }
+        frame.blendMode(PConstants.BLEND)
+
+
+        playerObject.draw(frame)
+
+        synchronized(enemyBodyObjects) {
+            val bodyObjMagIterator = enemyBodyObjects.listIterator()
+            bodyObjMagIterator.forEachRemaining { it.draw(frame) }
         }
 
-        frame.fill(255F, 255F, 255F)
-        bulletsObjects.forEach {
+        frame.blendMode(PConstants.ADD)
+        bulletObjectManager.forEach {
             it.draw(frame)
         }
     }
-}
 
-//    //=========================判定・削除スレッド==============================
-//
-//
-//    private fun threadJudgeTreat(){
-//        var error: Long = 0
-//        val fps: Int = 60 //判定・削除スレッドfps
-//        val idealSleep: Long = ((1000 shl 16) / fps).toLong()
-//        var oldTime: Long
-//        var newTime: Long = System.currentTimeMillis() shl 16
-//        thread {
-//            while (true){
-//                oldTime = newTime
-//
-//                updatePos() // メイン処理
-//                checkRemoval()
-//
-//                newTime = System.currentTimeMillis() shl 16
-//                var sleepTime = idealSleep - (newTime - oldTime) - error // 休止できる時間
-//                if (sleepTime < 0x20000) sleepTime = 0x20000 // 最低でも2msは休止
-//                oldTime = newTime
-//                Thread.sleep(sleepTime shr 16) // 休止
-//
-//                newTime = System.currentTimeMillis() shl 16
-//                error = newTime - oldTime - sleepTime // 休止時間の誤差
-//
-//                judgeFps()
-//            }
-//        }
-//    }
-//
-//    private var judgeBasetime: Long = 0   //測定基準時間
-//    private var judgeFrameCount: Int = 0      //フレーム数
-//
-//    private fun judgeFps() {
-//        ++judgeFrameCount        //フレーム数をインクリメント
-//        val now = System.currentTimeMillis()      //現在時刻を取得
-//        if (now - judgeBasetime >= 1000) {       //１秒以上経過していれば
-//            judgeFps = (judgeFrameCount * 1000).toFloat() / (now - judgeBasetime).toFloat()        //フレームレートを計算
-//            judgeBasetime = now     //現在時刻を基準時間に
-//            judgeFrameCount = 0          //フレーム数をリセット
-//        }
-//    }
+    companion object {
+        val enemyBulletsMorton = Array<MutableList<BulletObject>>(87) { mutableListOf()}
+        val playerBulletsMorton = Array<MutableList<BulletObject>>(87) { mutableListOf()}
+    }
+}

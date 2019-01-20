@@ -1,97 +1,67 @@
 package AppDisplayManager
 
+import AudioFilePlayer
 import GameObject.bodyObjSize
 import GameObject.bulletObjSize
 import GameObject.calFps
+import SE
 import processing.core.PApplet
-import processing.core.PGraphics
-import processing.core.PImage
-import processing.opengl.PShader
+import processing.core.PConstants
+
 
 //メインウィンドウ
 const val WINDOW_WIDTH = 920
 const val WINDOW_HEIGHT = 600
 
 //PlayableFrame
-const val PLAYABLE_FRAME_WIDTH = 480
-const val PLAYABLE_FRAME_HEIGHT = 560
-const val PLAYABLE_START_POSX = 20
-const val PLAYABLE_START_POSY = 20
+const val FRAME_WIDTH = 480
+const val FRAME_HEIGHT = 560
+const val FRAME_PADDING = 80
+
+const val GAME_SPACE_WIDTH = FRAME_WIDTH + FRAME_PADDING
+const val GAME_SPACE_HEIGHT = FRAME_HEIGHT + FRAME_PADDING
+
+const val PLAYABLE_START_POSX = 20f
+const val PLAYABLE_START_POSY = 20f
 
 class AppDisplayManager : PApplet (){
-    companion object {
-        var inputCrossKey = 0b00000 //dir: shift, d, r, u, l
-    }
-
     lateinit var frames : Array<GraphicFrame>
-    lateinit var shader : PShader
-    lateinit var pg : PGraphics
-    lateinit var png : PImage
-
-    var weight = 100f
-
-    var minfps = 60f
+    val player = AudioFilePlayer()
 
     fun run(args: Array<String>) : Unit = PApplet.main(AppDisplayManager::class.qualifiedName) //processing起動
 
-    override fun settings() : Unit{
+    override fun settings(){
         //TIS = Text Input Sources, TSM = Text Services Manager
-        size(WINDOW_WIDTH, WINDOW_HEIGHT, P3D)
-        png = loadImage("res/image/particleTest.png")
+        size(WINDOW_WIDTH, WINDOW_HEIGHT, PConstants.P2D)
+        //fullScreen(PConstants.P2D)
+
         frames = arrayOf(PlayableFrame())
     }
 
-    override fun setup() : Unit{
+    override fun setup(){
         fill(0xff)
         frameRate(60f)
 
-        pg = createGraphics(height, height, P2D)
-
-        shader = pg.loadShader("src/AppDisplayManager/Shader/Bullets.frag", "src/AppDisplayManager/Shader/Bullets.vert")
-        shader.set("weight", weight)
-
-        with(pg) {
-
-        }
-
-        strokeWeight(weight)
-        strokeCap(SQUARE)
-        stroke(255)
+        hint(PConstants.DISABLE_DEPTH_TEST)
+        hint(PConstants.DISABLE_OPENGL_ERRORS)
 
         frames.forEach { it.start(this) }
     }
 
 
-    override fun draw() : Unit{
-        background(0f)
-        shader.set("sprite", png)
-
-        /*debug*/
-        with(pg){
-            beginDraw()
-
-            endDraw()
-        }
-
-        image(pg, 0f, 0f)
-
-        shader(shader, POINTS)
-        filter(shader)
-        blendMode(ADD)
-        point(mouseX.toFloat(), mouseY.toFloat())
-        point(mouseX.toFloat() + 50, mouseY.toFloat())
+    override fun draw(){
+        background(255f)
 
 
-        //frames.forEach { it.draw(this) }
+        frames.forEach { it.draw(this) }
 
         //fps
-        fill(0xff)
+        fill(0x00)
 
-        val s = arrayOf("bul:$bulletObjSize bod:$bodyObjSize", "cFps:$calFps", "mdFps:$minfps", "dFps:$frameRate")
+        val s = arrayOf("bul:$bulletObjSize bod:$bodyObjSize", "cFps:$calFps", "dFps:$frameRate")
         for (i in 0 until s.size){
             text(s[i], WINDOW_WIDTH -150f, WINDOW_HEIGHT - 10f * (i + 1))
         }
-
     }
 
     override fun keyPressed() {
@@ -102,12 +72,15 @@ class AppDisplayManager : PApplet (){
                 inputCrossKey = inputCrossKey or keySwitch
             }
 
-            32 ->{ //space
-                minfps = 60f
+            16 ->{
+                inputCrossKey = inputCrossKey or 0b010000
             }
 
-            16 ->{
-                inputCrossKey = inputCrossKey or 0b10000
+            90 ->{
+                player.playSE(SE.NormalShot)
+                //zzzplayer.loopPlaySE(SE.NormalShot, Clip.LOOP_CONTINUOUSLY)
+
+                inputCrossKey = inputCrossKey or 0b100000
             }
         }
     }
@@ -121,9 +94,16 @@ class AppDisplayManager : PApplet (){
             }
 
             16 ->{
-                inputCrossKey = inputCrossKey and 0b01111
+                inputCrossKey = inputCrossKey and 0b101111
+            }
+
+            90 ->{
+                inputCrossKey = inputCrossKey and 0b011111
             }
         }
     }
-}
 
+    companion object {
+        var inputCrossKey = 0b000000 //dir: z, shift, d, r, u, l
+    }
+}

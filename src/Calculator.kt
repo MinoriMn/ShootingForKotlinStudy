@@ -1,5 +1,9 @@
-import AppDisplayManager.PLAYABLE_FRAME_HEIGHT
-import AppDisplayManager.PLAYABLE_FRAME_WIDTH
+
+import AppDisplayManager.GAME_SPACE_HEIGHT
+import AppDisplayManager.GAME_SPACE_WIDTH
+import GameObject.BodyObject
+import GameObject.BulletObject
+import GameObject.CollisionType
 
 //trueは衝突
 fun circleCollision(px1 : Float, px2 : Float, py1 : Float, py2 : Float, r1 : Float, r2 : Float) : Boolean{
@@ -12,8 +16,21 @@ fun circleCollision(px1 : Float, px2 : Float, py1 : Float, py2 : Float, r1 : Flo
     return (dx * dx + dy * dy) < sr * sr
 }
 
-val MORTON_UNITX = (PLAYABLE_FRAME_WIDTH + 80) / 8
-val MORTON_UNITY = (PLAYABLE_FRAME_HEIGHT + 80) / 8
+fun collisionFunctionDetection(bodyObject: BodyObject, bulletObject: BulletObject) {
+    var hit = false
+    val bodyObjectCollisionType = bodyObject.collisionType
+    val bulletObjectCollisionType = bulletObject.collisionType
+    when{
+        bodyObjectCollisionType == CollisionType.Cycle && bulletObjectCollisionType == CollisionType.Cycle -> hit = circleCollision(bodyObject.posX, bulletObject.posX, bodyObject.posY, bulletObject.posY, bodyObject.halfSize, bulletObject.halfSize)
+    }
+    if(hit) bodyObject.hitBullet()
+    bulletObject.deleteFlag = bulletObject.deleteFlag or hit
+}
+
+const val MORTON_UNITX = (GAME_SPACE_WIDTH) / 8
+const val MORTON_UNITY = (GAME_SPACE_HEIGHT) / 8
+
+val pow4 = arrayListOf(1, 4, 16, 64)
 
 fun pointToMorton(posX: Float, posY: Float, halfWidth: Float, halfHeight: Float) : Int{
     val lt_mx : Int = ((posX - halfWidth) / MORTON_UNITX).toInt()
@@ -37,7 +54,7 @@ fun pointToMorton(posX: Float, posY: Float, halfWidth: Float, halfHeight: Float)
     val L = 3 - attachSpace
     val I = rb_morton shr (2 * attachSpace)
 
-    val r = ((Math.pow(4.0, L.toDouble())).toInt() - 1) / 3/*4-1*/ + I
+    val r = (pow4[L] - 1) / 3/*4-1*/ + I
 
     return r
 }

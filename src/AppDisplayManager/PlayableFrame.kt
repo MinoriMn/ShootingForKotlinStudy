@@ -4,46 +4,73 @@ import GameObject.GameObjectManager
 import GameObject.PlayerObject
 import MORTON_UNITX
 import MORTON_UNITY
+import processing.core.PConstants
 import processing.core.PGraphics
 
 
 class PlayableFrame : GraphicFrame() {
-    private val gameObjectManager = GameObjectManager(PlayerObject(null))//managerの生成, playerも生成
+    private val gameObjectManager = GameObjectManager(PlayerObject())//managerの生成, playerも生成
 
     lateinit var framePG : PGraphics
 
     override fun start(app: AppDisplayManager) {
-        framePG = app.createGraphics(PLAYABLE_FRAME_WIDTH, PLAYABLE_FRAME_HEIGHT)
-        with(framePG){
-            beginDraw()
-            background(0xaa)
-            endDraw()
-        }
+        framePG = app.createGraphics(FRAME_WIDTH, FRAME_HEIGHT, PConstants.P2D)
+        framePG.imageMode(PConstants.CENTER)
+        framePG.noStroke()
+        gameObjectManager.start(app)
     }
     override fun draw(app: AppDisplayManager) {
-        with(framePG){
-            beginDraw()
-            background(0xff)
+        framePG.colorMode(PConstants.HSB, 360f, 100f, 100f)
+        framePG.beginDraw()
+        with(framePG) {
+            background(0f, 0f, 30f)
 
-            /*debug*/
-            framePG.stroke(255F, 170F, 170F)
             translate(-40f, -40f)
-            for(i in 1..7){
-                framePG.line((MORTON_UNITX * i).toFloat(), 0f, (MORTON_UNITX * i).toFloat(), PLAYABLE_FRAME_HEIGHT + 160f)
-                framePG.line(0f, (MORTON_UNITY * i).toFloat(), PLAYABLE_FRAME_WIDTH + 160f, (MORTON_UNITY * i).toFloat())
-            }
-            framePG.stroke(255F, 100F, 100F)
-            for(i in 1..3){
-                framePG.line((MORTON_UNITX * i * 2).toFloat(), 0f, (MORTON_UNITX * i * 2).toFloat(), PLAYABLE_FRAME_HEIGHT + 160f)
-                framePG.line(0f, (MORTON_UNITY * i * 2).toFloat(), PLAYABLE_FRAME_WIDTH + 160f, (MORTON_UNITY * i * 2).toFloat())
-            }
-            framePG.stroke(0F)
-
 
             gameObjectManager.draw(framePG)
-            translate(40f, 40f)
-            endDraw()
+
+            //drawGrid()
+
+            //translate(40f, 40f)
         }
-        app.image(framePG, PLAYABLE_START_POSX.toFloat(), PLAYABLE_START_POSY.toFloat())
+
+        framePG.endDraw()
+        app.image(framePG, PLAYABLE_START_POSX, PLAYABLE_START_POSY)
+    }
+
+    fun drawGrid(){
+        framePG.strokeWeight(1f)
+
+        /*debug*/
+            framePG.stroke(255F, 170F, 170F)
+            for (i in 1..7) {
+                framePG.line(
+                    (MORTON_UNITX * i).toFloat(),
+                    0f,
+                    (MORTON_UNITX * i).toFloat(),
+                    FRAME_HEIGHT + 160f
+                )
+                framePG.line(
+                    0f,
+                    (MORTON_UNITY * i).toFloat(),
+                    FRAME_WIDTH + 160f,
+                    (MORTON_UNITY * i).toFloat()
+                )
+            }
+            framePG.stroke(255F, 100F, 100F)
+            for (i in 1..3) {
+                framePG.line(
+                    (MORTON_UNITX * i * 2).toFloat(),
+                    0f,
+                    (MORTON_UNITX * i * 2).toFloat(),
+                    FRAME_HEIGHT + 160f
+                )
+                framePG.line(
+                    0f,
+                    (MORTON_UNITY * i * 2).toFloat(),
+                    FRAME_WIDTH + 160f,
+                    (MORTON_UNITY * i * 2).toFloat()
+                )
+            }
     }
 }
