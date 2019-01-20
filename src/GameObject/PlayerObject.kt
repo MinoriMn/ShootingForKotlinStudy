@@ -9,7 +9,7 @@ import processing.core.PGraphics
 import processing.core.PImage
 import java.util.*
 
-class PlayerObject(override val objectData: Objects?) : BodyObject{
+class PlayerObjectBase(override val objectData: Objects?) : BodyObjectBase{
     override var posX = PLAYABLE_FRAME_WIDTH / 2f + 40f
     override var posY = PLAYABLE_FRAME_HEIGHT - 30f + 40f //プレイヤー座標 初期位置
 
@@ -28,17 +28,20 @@ class PlayerObject(override val objectData: Objects?) : BodyObject{
     private val rBorder = PLAYABLE_FRAME_WIDTH - halfSize + 40f
     private val bBorder = PLAYABLE_FRAME_HEIGHT - halfSize + 40f
 
-    lateinit var playerImg : PImage
+    val playerImg = kotlin.arrayOfNulls<PImage>(10)
+
 
     init {
 
     }
 
     fun start(app : PApplet){
-        playerImg = app.loadImage("res/image/test_player.png")
+        val playerImgSprite = app.loadImage("res/image/player_reimu.png")
+        playerImg[0] = playerImgSprite.get(0, 0, 48, 48)
+        playerImg[8] = playerImgSprite.get(69, 167, 6, 6)
     }
 
-    override fun updateData() : GameObject {
+    override fun updateData() : GameObjectBase {
         return this
     }
     
@@ -85,8 +88,9 @@ class PlayerObject(override val objectData: Objects?) : BodyObject{
 
     override fun draw(frame: PGraphics) {
         frame.fill(0f, 255f, 255f)
-        frame.image(playerImg, posX, posY, (halfSize + 1) * 10, (halfSize + 1) * 10)
-        frame.ellipse(posX, posY,(halfSize + 1) * 2, (halfSize + 1) * 2)
+        frame.noTint()
+        frame.image(playerImg[0], posX, posY, 30f, 30f)
+        frame.image(playerImg[8], posX, posY, 6f, 6f)
     }
 
     override fun checkRemoval() {
