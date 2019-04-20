@@ -34,24 +34,25 @@ data class RoundBullets(private val gameObjectManager: GameObjectManager): Bulle
         bulletTex = app.createGraphics(30, 30, PConstants.P2D)
         pointShader = app.loadShader("src/AppDisplayManager/Shader/RoundBullets.frag")
         pointShader.set("center", 15f, 15f)
-        pointShader.set("a", 1f)
+        pointShader.set("a", 3f)
         pointShader.set("r", 15f)
 
-        bulletTexImgs = Array(90){i -> makeBulletTex(i * 4)}
 
         bulletPgo = bulletTex as PGraphicsOpenGL
-        with(bulletTex){
+        with(bulletTex) {
             beginDraw()
             shader(pointShader)
             noStroke()
             rect(0f, 0f, 30f, 30f)
             endDraw()
         }
+
+        bulletTexImgs = Array(90){i -> makeBulletTex(i)}
+
     }
 
     //objectdataから情報管理を行う
     override fun updateData() : GameObjectBase{
-
         bulletObjSize += bullets.size
 
         return this
@@ -68,16 +69,11 @@ data class RoundBullets(private val gameObjectManager: GameObjectManager): Bulle
 
     var imk = 0
     var ii = 0
-
     override fun draw(frame: PGraphics) {
 
         var i = ii++
         synchronized(bullets) {
             val bulletObjIterator = bullets.listIterator()
-//            bulletObjIterator.forEachRemaining {
-//                frame.tint(frame.color(i++ % 360, 40, 100))
-//                frame.image(bulletTexImg, it.posX, it.posY, it.halfSize * 2 + 4, it.halfSize * 2 + 4)
-//            }
 
             imk = (imk + 1) % 90
             frame.beginShape(PConstants.QUADS)
@@ -91,6 +87,7 @@ data class RoundBullets(private val gameObjectManager: GameObjectManager): Bulle
                 frame.vertex(bulletData.posX + size, bulletData.posY + size, 30f, 30f)
                 frame.vertex(bulletData.posX - size, bulletData.posY + size, 0f, 30f)
             }
+
             frame.endShape()
         }
 
@@ -117,16 +114,14 @@ data class RoundBullets(private val gameObjectManager: GameObjectManager): Bulle
     }
 
     fun makeBulletTex(a : Int) : PImage{
-            //print(" DD")
-            pointShader.set("a", cos(radians(a.toFloat())) * 2 + 3)
-
-            with(bulletTex) {
-                beginDraw()
-                shader(pointShader)
-                background(0, 0f)
-                rect(0f, 0f, 30f, 30f)
-                endDraw()
-            }
+        pointShader.set("a", 3f + sin(radians(a * 4f)) * 2f)
+        with(bulletTex) {
+            beginDraw()
+            shader(pointShader)
+            background(0, 0f)
+            rect(0f, 0f, 30f, 30f)
+            endDraw()
+        }
 
         return bulletTex.copy()
 

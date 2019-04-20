@@ -94,7 +94,7 @@ class PlayerObject() : BodyObject{
     }
 
     override fun hitBullet() {
-        println("hit")
+//        println("hit")
     }
 
 }

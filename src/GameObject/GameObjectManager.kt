@@ -171,7 +171,9 @@ class GameObjectManager(playerObject: PlayerObject) {
 
         synchronized(enemyBodyObjects) {
             val bodyObjMagIterator = enemyBodyObjects.listIterator()
-            bodyObjMagIterator.forEachRemaining { it.draw(frame) }
+            bodyObjMagIterator.forEachRemaining {
+                it.draw(frame)
+            }
         }
 
         frame.blendMode(PConstants.ADD)

@@ -25,7 +25,7 @@ class TestEnemyObject(override var posX : Float, override var posY : Float, pos_
 
     override fun updateData(): GameObjectBase {
         for (i in 0..3){
-            gameObjectManager.roundBullets.add(posX, posY, bul_deg, 0.3f + random.nextFloat() * 1f, 1f)
+            gameObjectManager.roundBullets.add(posX, posY, bul_deg, 3f + random.nextFloat() * 1f, 1f)
             bul_deg++
         }
         bul_deg %= 360
